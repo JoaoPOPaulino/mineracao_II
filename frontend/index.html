@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <title>Dashboard Regras de Associação</title>
+
+    <style>
+      body {
+        font-family: Arial;
+        background: #f4f4f4;
+        padding: 30px;
+      }
+
+      .container {
+        max-width: 1200px;
+        margin: auto;
+      }
+
+      h1 {
+        text-align: center;
+      }
+
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        background: white;
+      }
+
+      th,
+      td {
+        border: 1px solid #ddd;
+        padding: 10px;
+        text-align: left;
+      }
+
+      th {
+        background: #2563eb;
+        color: white;
+      }
+
+      tr:nth-child(even) {
+        background: #f8fafc;
+      }
+    </style>
+  </head>
+
+  <body>
+    <div class="container">
+      <h1>Dashboard de Regras de Associação</h1>
+
+      <table>
+        <thead>
+          <tr>
+            <th>Antecedente</th>
+            <th>Consequente</th>
+            <th>Suporte</th>
+            <th>Confiança</th>
+            <th>Lift</th>
+          </tr>
+        </thead>
+
+        <tbody id="tabela"></tbody>
+      </table>
+    </div>
+
+    <script>
+      async function carregarRegras() {
+        const response = await fetch("/regras");
+
+        const dados = await response.json();
+
+        const tabela = document.getElementById("tabela");
+
+        dados.forEach((regra) => {
+          tabela.innerHTML += `
+        <tr>
+            <td>${regra.antecedents}</td>
+            <td>${regra.consequents}</td>
+            <td>${Number(regra.support).toFixed(4)}</td>
+            <td>${Number(regra.confidence).toFixed(4)}</td>
+            <td>${Number(regra.lift).toFixed(4)}</td>
+        </tr>
+        `;
+        });
+      }
+
+      carregarRegras();
+    </script>
+  </body>
+</html>
