@@ -3,90 +3,668 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-
-    <title>Dashboard Regras de Associação</title>
-
+    <title>Dashboard — Regras de Associação</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet" />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
     <style>
+      :root {
+        --bg: #0b0e14;
+        --surface: #13171f;
+        --surface2: #1c2130;
+        --border: #252d3d;
+        --accent: #00e5a0;
+        --accent2: #0099ff;
+        --accent3: #ff6b6b;
+        --text: #e8edf5;
+        --muted: #5a6478;
+        --mono: 'Space Mono', monospace;
+        --sans: 'DM Sans', sans-serif;
+      }
+
+      * { box-sizing: border-box; margin: 0; padding: 0; }
+
       body {
-        font-family: Arial;
-        background: #f4f4f4;
-        padding: 30px;
+        background: var(--bg);
+        color: var(--text);
+        font-family: var(--sans);
+        min-height: 100vh;
       }
 
-      .container {
-        max-width: 1200px;
-        margin: auto;
+      /* ── Header ── */
+      header {
+        border-bottom: 1px solid var(--border);
+        padding: 20px 32px;
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        background: var(--surface);
       }
 
-      h1 {
-        text-align: center;
+      header .badge {
+        font-family: var(--mono);
+        font-size: 10px;
+        background: var(--accent);
+        color: #000;
+        padding: 3px 8px;
+        border-radius: 3px;
+        font-weight: 700;
+        letter-spacing: 1px;
       }
+
+      header h1 {
+        font-size: 18px;
+        font-weight: 500;
+        letter-spacing: -0.3px;
+      }
+
+      header .subtitle {
+        font-size: 12px;
+        color: var(--muted);
+        font-family: var(--mono);
+        margin-left: auto;
+      }
+
+      /* ── Layout ── */
+      main {
+        max-width: 1400px;
+        margin: 0 auto;
+        padding: 28px 32px;
+        display: flex;
+        flex-direction: column;
+        gap: 28px;
+      }
+
+      /* ── Stats Row ── */
+      .stats-row {
+        display: grid;
+        grid-template-columns: repeat(6, 1fr);
+        gap: 12px;
+      }
+
+      .stat-card {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        padding: 18px 16px;
+        position: relative;
+        overflow: hidden;
+      }
+
+      .stat-card::before {
+        content: '';
+        position: absolute;
+        top: 0; left: 0; right: 0;
+        height: 2px;
+        background: var(--accent);
+      }
+
+      .stat-card:nth-child(2)::before { background: var(--accent2); }
+      .stat-card:nth-child(3)::before { background: var(--accent3); }
+      .stat-card:nth-child(4)::before { background: #c084fc; }
+      .stat-card:nth-child(5)::before { background: #fbbf24; }
+      .stat-card:nth-child(6)::before { background: var(--accent); }
+
+      .stat-label {
+        font-size: 10px;
+        font-family: var(--mono);
+        color: var(--muted);
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        margin-bottom: 8px;
+      }
+
+      .stat-value {
+        font-size: 26px;
+        font-family: var(--mono);
+        font-weight: 700;
+        color: var(--text);
+        line-height: 1;
+      }
+
+      /* ── Charts Row ── */
+      .charts-row {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 20px;
+      }
+
+      .chart-card {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        padding: 20px;
+      }
+
+      .chart-title {
+        font-size: 11px;
+        font-family: var(--mono);
+        color: var(--muted);
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        margin-bottom: 16px;
+      }
+
+      .chart-card canvas { max-height: 260px; }
+
+      /* ── Filters ── */
+      .filters {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        padding: 20px;
+        display: flex;
+        gap: 16px;
+        align-items: flex-end;
+        flex-wrap: wrap;
+      }
+
+      .filter-group {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        min-width: 160px;
+      }
+
+      .filter-group label {
+        font-size: 10px;
+        font-family: var(--mono);
+        color: var(--muted);
+        text-transform: uppercase;
+        letter-spacing: 1px;
+      }
+
+      .filter-group input,
+      .filter-group select {
+        background: var(--bg);
+        border: 1px solid var(--border);
+        border-radius: 5px;
+        color: var(--text);
+        font-family: var(--mono);
+        font-size: 13px;
+        padding: 8px 12px;
+        outline: none;
+        transition: border-color .2s;
+      }
+
+      .filter-group input:focus,
+      .filter-group select:focus {
+        border-color: var(--accent);
+      }
+
+      .filter-group select option {
+        background: var(--surface2);
+      }
+
+      .btn-apply {
+        background: var(--accent);
+        color: #000;
+        border: none;
+        border-radius: 5px;
+        padding: 9px 20px;
+        font-family: var(--mono);
+        font-size: 12px;
+        font-weight: 700;
+        cursor: pointer;
+        letter-spacing: .5px;
+        transition: opacity .2s;
+        white-space: nowrap;
+      }
+
+      .btn-apply:hover { opacity: .85; }
+
+      .btn-reset {
+        background: transparent;
+        color: var(--muted);
+        border: 1px solid var(--border);
+        border-radius: 5px;
+        padding: 9px 16px;
+        font-family: var(--mono);
+        font-size: 12px;
+        cursor: pointer;
+        transition: color .2s, border-color .2s;
+        white-space: nowrap;
+      }
+
+      .btn-reset:hover { color: var(--text); border-color: var(--muted); }
+
+      /* ── Table ── */
+      .table-card {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        overflow: hidden;
+      }
+
+      .table-header {
+        padding: 16px 20px;
+        border-bottom: 1px solid var(--border);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+      }
+
+      .table-header h2 {
+        font-size: 11px;
+        font-family: var(--mono);
+        color: var(--muted);
+        text-transform: uppercase;
+        letter-spacing: 1px;
+      }
+
+      #result-count {
+        font-size: 11px;
+        font-family: var(--mono);
+        color: var(--accent);
+      }
+
+      .table-wrap { overflow-x: auto; }
 
       table {
         width: 100%;
         border-collapse: collapse;
-        background: white;
       }
 
-      th,
-      td {
-        border: 1px solid #ddd;
-        padding: 10px;
-        text-align: left;
+      thead tr {
+        border-bottom: 1px solid var(--border);
       }
 
       th {
-        background: #2563eb;
-        color: white;
+        padding: 12px 16px;
+        text-align: left;
+        font-size: 10px;
+        font-family: var(--mono);
+        color: var(--muted);
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        font-weight: 400;
+        white-space: nowrap;
       }
 
-      tr:nth-child(even) {
-        background: #f8fafc;
+      td {
+        padding: 12px 16px;
+        font-size: 13px;
+        border-bottom: 1px solid var(--border);
+        vertical-align: middle;
+      }
+
+      tbody tr:last-child td { border-bottom: none; }
+
+      tbody tr {
+        transition: background .15s;
+      }
+
+      tbody tr:hover { background: var(--surface2); }
+
+      .rule-items {
+        font-family: var(--mono);
+        font-size: 12px;
+      }
+
+      .tag {
+        display: inline-block;
+        background: var(--surface2);
+        border: 1px solid var(--border);
+        border-radius: 3px;
+        padding: 2px 7px;
+        font-size: 11px;
+        font-family: var(--mono);
+        color: var(--text);
+        margin: 1px;
+      }
+
+      .arrow {
+        color: var(--accent);
+        font-family: var(--mono);
+        font-weight: 700;
+        padding: 0 6px;
+      }
+
+      .metric {
+        font-family: var(--mono);
+        font-size: 13px;
+      }
+
+      .lift-high { color: var(--accent); }
+      .lift-mid  { color: var(--accent2); }
+      .lift-low  { color: var(--muted); }
+
+      .bar-cell { display: flex; align-items: center; gap: 8px; }
+      .mini-bar {
+        flex: 1;
+        height: 4px;
+        background: var(--border);
+        border-radius: 2px;
+        overflow: hidden;
+        min-width: 60px;
+        max-width: 100px;
+      }
+      .mini-bar-fill {
+        height: 100%;
+        border-radius: 2px;
+        background: var(--accent2);
+      }
+
+      /* ── Loading / Empty ── */
+      .loading {
+        padding: 40px;
+        text-align: center;
+        font-family: var(--mono);
+        color: var(--muted);
+        font-size: 12px;
+        letter-spacing: 1px;
+      }
+
+      .loading::after {
+        content: '';
+        animation: dots 1.5s infinite;
+      }
+
+      @keyframes dots {
+        0%   { content: ''; }
+        33%  { content: '.'; }
+        66%  { content: '..'; }
+        100% { content: '...'; }
+      }
+
+      /* ── Responsive ── */
+      @media (max-width: 900px) {
+        .stats-row { grid-template-columns: repeat(3, 1fr); }
+        .charts-row { grid-template-columns: 1fr; }
+        main { padding: 16px; }
       }
     </style>
   </head>
 
   <body>
-    <div class="container">
+    <header>
+      <span class="badge">ECLAT</span>
       <h1>Dashboard de Regras de Associação</h1>
+      <span class="subtitle">Disciplinas Universitárias — UnB</span>
+    </header>
 
-      <table>
-        <thead>
-          <tr>
-            <th>Antecedente</th>
-            <th>Consequente</th>
-            <th>Suporte</th>
-            <th>Confiança</th>
-            <th>Lift</th>
-          </tr>
-        </thead>
+    <main>
+      <!-- Stats -->
+      <div class="stats-row" id="stats-row">
+        <div class="stat-card"><div class="stat-label">Total de Regras</div><div class="stat-value" id="s-total">—</div></div>
+        <div class="stat-card"><div class="stat-label">Lift Máximo</div><div class="stat-value" id="s-lift-max">—</div></div>
+        <div class="stat-card"><div class="stat-label">Lift Médio</div><div class="stat-value" id="s-lift-med">—</div></div>
+        <div class="stat-card"><div class="stat-label">Confiança Média</div><div class="stat-value" id="s-conf">—</div></div>
+        <div class="stat-card"><div class="stat-label">Suporte Médio</div><div class="stat-value" id="s-sup">—</div></div>
+        <div class="stat-card"><div class="stat-label">Itens Únicos</div><div class="stat-value" id="s-itens">—</div></div>
+      </div>
 
-        <tbody id="tabela"></tbody>
-      </table>
-    </div>
+      <!-- Charts -->
+      <div class="charts-row">
+        <div class="chart-card">
+          <div class="chart-title">Distribuição de Lift</div>
+          <canvas id="chart-lift"></canvas>
+        </div>
+        <div class="chart-card">
+          <div class="chart-title">Top 10 Regras por Lift</div>
+          <canvas id="chart-top"></canvas>
+        </div>
+      </div>
+
+      <!-- Filters -->
+      <div class="filters">
+        <div class="filter-group">
+          <label>Lift mínimo</label>
+          <input type="number" id="f-lift" value="1.0" min="0" step="0.1" />
+        </div>
+        <div class="filter-group">
+          <label>Confiança mínima</label>
+          <input type="number" id="f-conf" value="0.0" min="0" max="1" step="0.05" />
+        </div>
+        <div class="filter-group">
+          <label>Suporte mínimo</label>
+          <input type="number" id="f-sup" value="0.0" min="0" max="1" step="0.01" />
+        </div>
+        <div class="filter-group">
+          <label>Filtrar por item</label>
+          <select id="f-item">
+            <option value="">Todos os itens</option>
+          </select>
+        </div>
+        <div class="filter-group">
+          <label>Limite</label>
+          <input type="number" id="f-limit" value="50" min="5" max="500" step="5" />
+        </div>
+        <button class="btn-apply" onclick="aplicarFiltros()">Aplicar</button>
+        <button class="btn-reset" onclick="resetarFiltros()">Limpar</button>
+      </div>
+
+      <!-- Table -->
+      <div class="table-card">
+        <div class="table-header">
+          <h2>Regras Descobertas</h2>
+          <span id="result-count">—</span>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Antecedente → Consequente</th>
+                <th>Suporte</th>
+                <th>Confiança</th>
+                <th>Lift</th>
+                <th>Leverage</th>
+                <th>Conviction</th>
+              </tr>
+            </thead>
+            <tbody id="tabela">
+              <tr><td colspan="7"><div class="loading">carregando regras</div></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </main>
 
     <script>
-      async function carregarRegras() {
-        const response = await fetch("/regras");
+      let chartLift = null;
+      let chartTop = null;
+      let todasRegras = [];
 
-        const dados = await response.json();
+      // ── Fetch stats ──
+      async function carregarStats() {
+        try {
+          const r = await fetch('/stats');
+          if (!r.ok) return;
+          const d = await r.json();
+          document.getElementById('s-total').textContent = d.total_regras.toLocaleString('pt-BR');
+          document.getElementById('s-lift-max').textContent = d.lift_max.toFixed(2);
+          document.getElementById('s-lift-med').textContent = d.lift_medio.toFixed(2);
+          document.getElementById('s-conf').textContent = (d.confianca_media * 100).toFixed(1) + '%';
+          document.getElementById('s-sup').textContent = (d.suporte_medio * 100).toFixed(1) + '%';
+          document.getElementById('s-itens').textContent = d.itens_unicos;
+        } catch (e) { console.warn('Stats indisponíveis:', e); }
+      }
 
-        const tabela = document.getElementById("tabela");
+      // ── Fetch items for dropdown ──
+      async function carregarItens() {
+        try {
+          const r = await fetch('/itens');
+          if (!r.ok) return;
+          const itens = await r.json();
+          const sel = document.getElementById('f-item');
+          itens.forEach(item => {
+            const opt = document.createElement('option');
+            opt.value = item;
+            opt.textContent = item;
+            sel.appendChild(opt);
+          });
+        } catch (e) { console.warn('Itens indisponíveis:', e); }
+      }
 
-        dados.forEach((regra) => {
-          tabela.innerHTML += `
-        <tr>
-            <td>${regra.antecedents}</td>
-            <td>${regra.consequents}</td>
-            <td>${Number(regra.support).toFixed(4)}</td>
-            <td>${Number(regra.confidence).toFixed(4)}</td>
-            <td>${Number(regra.lift).toFixed(4)}</td>
-        </tr>
-        `;
+      // ── Render table ──
+      function renderTabela(dados) {
+        const tbody = document.getElementById('tabela');
+        const count = document.getElementById('result-count');
+
+        if (!dados.length) {
+          tbody.innerHTML = '<tr><td colspan="7"><div class="loading" style="animation:none">Nenhuma regra encontrada com estes filtros</div></td></tr>';
+          count.textContent = '0 regras';
+          return;
+        }
+
+        count.textContent = `${dados.length} regras`;
+
+        const maxLift = Math.max(...dados.map(r => r.lift));
+
+        tbody.innerHTML = dados.map((r, i) => {
+          const liftClass = r.lift >= 2 ? 'lift-high' : r.lift >= 1.5 ? 'lift-mid' : 'lift-low';
+          const confPct = (r.confidence * 100).toFixed(1);
+          const supPct  = (r.support  * 100).toFixed(2);
+          const liftPct = ((r.lift / maxLift) * 100).toFixed(1);
+
+          const toTags = v => String(v).split(', ').filter(t => t.trim()).map(t => `<span class="tag">${t.trim()}</span>`).join('');
+          const ante = toTags(r.antecedents);
+          const cons = toTags(r.consequents);
+
+          const conv = isFinite(r.conviction) ? r.conviction.toFixed(3) : '∞';
+
+          return `<tr>
+            <td class="metric" style="color:var(--muted)">${i + 1}</td>
+            <td class="rule-items">${ante}<span class="arrow">→</span>${cons}</td>
+            <td>
+              <div class="bar-cell">
+                <span class="metric">${supPct}%</span>
+                <div class="mini-bar"><div class="mini-bar-fill" style="width:${Math.min(r.support * 1000, 100)}%;background:var(--accent2)"></div></div>
+              </div>
+            </td>
+            <td>
+              <div class="bar-cell">
+                <span class="metric">${confPct}%</span>
+                <div class="mini-bar"><div class="mini-bar-fill" style="width:${r.confidence * 100}%;background:#c084fc"></div></div>
+              </div>
+            </td>
+            <td class="metric ${liftClass}">${r.lift.toFixed(3)}</td>
+            <td class="metric" style="color:var(--muted)">${r.leverage.toFixed(4)}</td>
+            <td class="metric" style="color:var(--muted)">${conv}</td>
+          </tr>`;
+        }).join('');
+      }
+
+      // ── Render chart: lift distribution ──
+      function renderChartLift(dados) {
+        const lifts = dados.map(r => r.lift);
+        const bins = [1, 1.5, 2, 2.5, 3, 3.5, 4, 5, 999];
+        const labels = ['1–1.5', '1.5–2', '2–2.5', '2.5–3', '3–3.5', '3.5–4', '4–5', '5+'];
+        const counts = new Array(labels.length).fill(0);
+
+        lifts.forEach(l => {
+          for (let i = 0; i < bins.length - 1; i++) {
+            if (l >= bins[i] && l < bins[i + 1]) { counts[i]++; break; }
+          }
+        });
+
+        const ctx = document.getElementById('chart-lift').getContext('2d');
+        if (chartLift) chartLift.destroy();
+        chartLift = new Chart(ctx, {
+          type: 'bar',
+          data: {
+            labels,
+            datasets: [{
+              label: 'Regras',
+              data: counts,
+              backgroundColor: 'rgba(0,229,160,0.25)',
+              borderColor: 'rgba(0,229,160,0.8)',
+              borderWidth: 1,
+              borderRadius: 3,
+            }]
+          },
+          options: {
+            plugins: { legend: { display: false } },
+            scales: {
+              x: { ticks: { color: '#5a6478', font: { family: 'Space Mono', size: 10 } }, grid: { color: '#1c2130' } },
+              y: { ticks: { color: '#5a6478', font: { family: 'Space Mono', size: 10 } }, grid: { color: '#1c2130' } },
+            }
+          }
         });
       }
 
-      carregarRegras();
+      // ── Render chart: top 10 rules ──
+      function renderChartTop(dados) {
+        const top10 = dados.slice(0, 10);
+        const labels = top10.map(r => `${r.antecedents} → ${r.consequents}`);
+        const lifts  = top10.map(r => r.lift);
+
+        const ctx = document.getElementById('chart-top').getContext('2d');
+        if (chartTop) chartTop.destroy();
+        chartTop = new Chart(ctx, {
+          type: 'bar',
+          data: {
+            labels,
+            datasets: [{
+              label: 'Lift',
+              data: lifts,
+              backgroundColor: 'rgba(0,153,255,0.25)',
+              borderColor: 'rgba(0,153,255,0.8)',
+              borderWidth: 1,
+              borderRadius: 3,
+            }]
+          },
+          options: {
+            indexAxis: 'y',
+            plugins: { legend: { display: false } },
+            scales: {
+              x: { ticks: { color: '#5a6478', font: { family: 'Space Mono', size: 10 } }, grid: { color: '#1c2130' } },
+              y: { ticks: { color: '#5a6478', font: { family: 'Space Mono', size: 9 }, maxRotation: 0 }, grid: { color: '#1c2130' } },
+            }
+          }
+        });
+      }
+
+      // ── Fetch rules with filters ──
+      async function carregarRegras(params = {}) {
+        const url = new URL('/regras', window.location.origin);
+        Object.entries(params).forEach(([k, v]) => { if (v !== '' && v != null) url.searchParams.set(k, v); });
+
+        const tbody = document.getElementById('tabela');
+        tbody.innerHTML = '<tr><td colspan="7"><div class="loading">carregando</div></td></tr>';
+
+        try {
+          const r = await fetch(url);
+          if (!r.ok) throw new Error(r.statusText);
+          const dados = await r.json();
+          todasRegras = dados;
+          renderTabela(dados);
+          renderChartLift(dados);
+          renderChartTop(dados);
+        } catch (e) {
+          tbody.innerHTML = `<tr><td colspan="7"><div class="loading" style="animation:none;color:var(--accent3)">Erro ao carregar: ${e.message}</div></td></tr>`;
+        }
+      }
+
+      function aplicarFiltros() {
+        carregarRegras({
+          min_lift:       document.getElementById('f-lift').value,
+          min_confidence: document.getElementById('f-conf').value,
+          min_support:    document.getElementById('f-sup').value,
+          item:           document.getElementById('f-item').value,
+          limit:          document.getElementById('f-limit').value,
+        });
+      }
+
+      function resetarFiltros() {
+        document.getElementById('f-lift').value  = '1.0';
+        document.getElementById('f-conf').value  = '0.0';
+        document.getElementById('f-sup').value   = '0.0';
+        document.getElementById('f-item').value  = '';
+        document.getElementById('f-limit').value = '50';
+        carregarRegras({ limit: 50 });
+      }
+
+      // ── Enter key on filters ──
+      document.querySelectorAll('.filters input').forEach(el => {
+        el.addEventListener('keydown', e => { if (e.key === 'Enter') aplicarFiltros(); });
+      });
+
+      // ── Init ──
+      carregarStats();
+      carregarItens();
+      carregarRegras({ limit: 50 });
     </script>
   </body>
 </html>
