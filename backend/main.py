@@ -1,5 +1,5 @@
 from pathlib import Path
-
+import numpy as np
 import pandas as pd
 
 from fastapi import FastAPI, HTTPException
@@ -15,34 +15,19 @@ regras: pd.DataFrame = pd.DataFrame()
 
 
 def _limpar_coluna_itens(serie: pd.Series) -> pd.Series:
-    """
-    Normaliza a coluna de antecedentes/consequentes para o formato
-    'Item A, Item B', independentemente de como foi salva no CSV.
-
-    Trata os seguintes formatos possíveis:
-      - Já correto:           'Cálculo 1, Física'
-      - frozenset como str:   "frozenset({'Cálculo 1', 'Física'})"
-      - Com aspas extras:     "{'Cálculo 1', 'Física'}"
-    """
-    import re
-
-    def _normalizar(valor: str) -> str:
+    """Limpa antecedentes/consequentes para exibição amigável."""
+    def _normalizar(valor):
         s = str(valor).strip()
-
-        # Detecta se ainda tem formato frozenset ou set
-        if s.startswith("frozenset(") or s.startswith("{"):
-            # Extrai tudo entre a primeira { e a última }
-            m = re.search(r"\{(.+)\}", s, re.DOTALL)
-            if m:
-                conteudo = m.group(1)
-                # Separa os itens (podem estar entre aspas simples ou duplas)
-                itens = re.findall(r"['\"](.+?)['\"]", conteudo)
-                return ", ".join(sorted(itens))
-
+        # Remove possíveis frozenset / set / aspas extras
+        s = s.replace("frozenset({", "").replace("})", "").replace("{", "").replace("}", "")
+        s = s.replace("'", "").replace('"', "").strip()
+        # Se tiver vírgula, ordena os itens
+        if "," in s:
+            itens = [x.strip() for x in s.split(",") if x.strip()]
+            return ", ".join(sorted(itens))
         return s
 
     return serie.apply(_normalizar)
-
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -50,10 +35,9 @@ async def lifespan(app: FastAPI):
     global regras
     if CSV_PATH.exists():
         regras = pd.read_csv(CSV_PATH)
-        # Normaliza as colunas independentemente do formato salvo no CSV
         regras["antecedents"] = _limpar_coluna_itens(regras["antecedents"])
         regras["consequents"] = _limpar_coluna_itens(regras["consequents"])
-        print(f"✅ {len(regras)} regras carregadas de {CSV_PATH}")
+        print(f"✅ {len(regras)} regras carregadas e normalizadas.")
     else:
         print(f"⚠️  Arquivo não encontrado: {CSV_PATH}")
     yield
@@ -93,20 +77,8 @@ def listar_regras(
     item: str = "",
     limit: int = 50,
 ):
-    """
-    Retorna regras filtradas e ordenadas por lift.
-    Parâmetros:
-        min_lift: lift mínimo (padrão 1.0)
-        min_confidence: confiança mínima (padrão 0.0)
-        min_support: suporte mínimo (padrão 0.0)
-        item: filtrar regras que contenham este item
-        limit: número máximo de regras retornadas (padrão 50)
-    """
     if regras.empty:
-        return JSONResponse(
-            status_code=503,
-            content={"detail": "Dados ainda não carregados"},
-        )
+        return JSONResponse(status_code=503, content={"detail": "Dados ainda não carregados"})
 
     df = regras.copy()
 
@@ -123,6 +95,10 @@ def listar_regras(
         df = df[mask]
 
     df = df.sort_values("lift", ascending=False).head(limit)
+
+    # CORREÇÃO: Tratar Infinity e NaN antes de converter para JSON
+    df = df.replace([np.inf, -np.inf], np.nan)
+    df = df.astype(object).where(pd.notna(df), None)
 
     return df.to_dict(orient="records")
 
